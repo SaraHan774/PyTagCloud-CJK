@@ -8,7 +8,7 @@ import colorsys
 import math
 import os
 import pygame
-import simplejson
+import json
 
 
 TAG_PADDING = 5
@@ -23,7 +23,8 @@ UPPER_START = 0.55
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
 DEFAULT_FONT = 'Droid Sans'
 DEFAULT_PALETTE = 'default'
-FONT_CACHE = simplejson.load(open(os.path.join(FONT_DIR, 'fonts.json'), 'r'))
+with open(os.path.join(FONT_DIR, 'fonts.json'), 'r') as f:
+    FONT_CACHE = json.load(f)
 
 pygame.init()
 convsurf = Surface((2 * TAG_PADDING, 2 * TAG_PADDING))
@@ -64,7 +65,7 @@ class Tag(Sprite):
         Sprite.__init__(self)
         self.tag = copy(tag)
         self.rotation = 0
-        
+
         self.font_spec = load_font(fontname)
         self.font = get_font(self.font_spec, self.tag['size'])
         fonter = self.font.render(tag['tag'], True, tag['color'])
@@ -99,23 +100,23 @@ class Tag(Sprite):
 
     def update_fontsize(self):
         self.font = get_font(self.font_spec, self.tag['size'])
-        
+
 def load_font(name):
     for font in FONT_CACHE:
         if font['name'] == name:
             return font
-    raise AttributeError('Invalid font name. Should be one of %s' % 
+    raise AttributeError('Invalid font name. Should be one of %s' %
                          ", ".join([f['name'] for f in FONT_CACHE]))
 
 def defscale(count, mincount, maxcount, minsize, maxsize):
     if maxcount == mincount:
         return int((maxsize - minsize) / 2.0 + minsize)
-    return int(minsize + (maxsize - minsize) * 
+    return int(minsize + (maxsize - minsize) *
                (count * 1.0 / (maxcount - mincount)) ** 0.8)
 
 def make_tags(wordcounts, minsize=3, maxsize=36, colors=None, scalef=defscale):
     """
-    sizes and colors tags 
+    sizes and colors tags
     wordcounts is a list of tuples(tags, count). (e.g. how often the
     word appears in a text)
     the tags are assigned sizes between minsize and maxsize, the function used
@@ -146,7 +147,7 @@ def _do_collide(sprite, group):
     # Test if we still collide with the last hit
     if LAST_COLLISON_HIT and collide_mask(sprite, LAST_COLLISON_HIT):
         return True
-    
+
     for sp in group:
         if collide_mask(sprite, sp):
             LAST_COLLISON_HIT = sp
@@ -208,7 +209,7 @@ def _search_place(current_tag, tag_store, canvas, spiral, ratio):
     start_y = current_tag.rect.y
     min_dist = None
     opt_x = opt_y = 0
-    
+
     current_bounding = _get_tags_bounding(tag_store)
     cx = current_bounding.w / 2.0
     cy = current_bounding.h / 2.0
@@ -222,17 +223,17 @@ def _search_place(current_tag, tag_store, canvas, spiral, ratio):
                 return
             else:
                 # get the distance from center
-                current_dist = (abs(cx - current_tag.rect.x) ** 2 + 
+                current_dist = (abs(cx - current_tag.rect.x) ** 2 +
                                 abs(cy - current_tag.rect.y) ** 2) ** 0.5
                 if not min_dist or current_dist < min_dist:
                     opt_x = current_tag.rect.x
-                    opt_y = current_tag.rect.y 
+                    opt_y = current_tag.rect.y
                     min_dist = current_dist
 
                 # only add tag if the spiral covered the canvas boundaries
                 if abs(dx) > canvas.width / 2.0 and abs(dy) > canvas.height / 2.0:
-                    current_tag.rect.x = opt_x                    
-                    current_tag.rect.y = opt_y                    
+                    current_tag.rect.x = opt_x
+                    current_tag.rect.y = opt_y
                     tag_store.add(current_tag)
 
                     new_bounding = current_bounding.union(current_tag.rect)
@@ -315,25 +316,25 @@ def _draw_cloud(
 
     # resize cloud
     zoom = min(float(size[0]) / canvas.w, float(size[1]) / canvas.h)
-    
+
     for tag in aligned_tags:
         tag.rect.x *= zoom
         tag.rect.y *= zoom
         tag.rect.width *= zoom
         tag.rect.height *= zoom
         tag.tag['size'] = int(tag.tag['size'] * zoom)
-        tag.update_fontsize() 
+        tag.update_fontsize()
 
     canvas = _get_tags_bounding(aligned_tags)
 
     return canvas, aligned_tags
 
 def create_tag_image(
-        tags, 
-        output, 
-        size=(500,500), 
-        background=(255, 255, 255), 
-        layout=LAYOUT_MIX, 
+        tags,
+        output,
+        size=(500,500),
+        background=(255, 255, 255),
+        layout=LAYOUT_MIX,
         fontname=DEFAULT_FONT,
         rectangular=False):
     """
@@ -345,7 +346,7 @@ def create_tag_image(
 
     sizeRect, tag_store = _draw_cloud(tags,
                                       layout,
-                                      size=size, 
+                                      size=size,
                                       fontname=fontname,
                                       rectangular=rectangular)
 
@@ -358,9 +359,9 @@ def create_tag_image(
         image_surface.blit(tag.image, (tag.rect.x - sizeRect.x + TAG_CLOUD_PADDING, tag.rect.y - sizeRect.y + TAG_CLOUD_PADDING))
     pygame.image.save(image_surface, output)
 
-def create_html_data(tags, 
-        size=(500,500), 
-        layout=LAYOUT_MIX, 
+def create_html_data(tags,
+        size=(500,500),
+        layout=LAYOUT_MIX,
         fontname=DEFAULT_FONT,
         rectangular=False):
     """
@@ -372,7 +373,7 @@ def create_html_data(tags,
 
     sizeRect, tag_store = _draw_cloud(tags,
                                       layout,
-                                      size=size, 
+                                      size=size,
                                       fontname=fontname,
                                       rectangular=rectangular)
 
@@ -387,13 +388,13 @@ def create_html_data(tags,
     for color_index, tag in enumerate(tags):
         if not color_map.has_key(tag['color']):
             color_name = "c%d" % color_index
-            hslcolor = colorsys.rgb_to_hls(tag['color'][0] / 255.0, 
-                                           tag['color'][1] / 255.0, 
+            hslcolor = colorsys.rgb_to_hls(tag['color'][0] / 255.0,
+                                           tag['color'][1] / 255.0,
                                            tag['color'][2] / 255.0)
             lighter = hslcolor[1] * 1.4
             if lighter > 1: lighter = 1
             light = colorsys.hls_to_rgb(hslcolor[0], lighter, hslcolor[2])
-            data['css'][color_name] = ('#%02x%02x%02x' % tag['color'], 
+            data['css'][color_name] = ('#%02x%02x%02x' % tag['color'],
                                        '#%02x%02x%02x' % (light[0] * 255,
                                                           light[1] * 255,
                                                           light[2] * 255))

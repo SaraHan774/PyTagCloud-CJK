@@ -19,10 +19,6 @@ Requirements
 
     $ apt-get install python-pygame
     
-#. Install simplejson::
-
-   $ pip install simplejson
-
 
 Installation
 ============
